@@ -1,9 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
-import { X, Menu } from "lucide-react";
+import { X, Menu, School } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
-import schoolLogo from "../assets/0f38946e273b623e7cb0b865c2f2fe194a9e92ea.png";
-import { preloadImage } from "../utils/imageOptimizer";
 
 interface SidebarItem {
   icon: ReactNode;
@@ -21,7 +19,6 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ items, activeItem, onItemClick, schoolName = "Graceland Royal Academy", themeColor = "#3B82F6" }: DashboardSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  useEffect(() => { preloadImage(schoolLogo); }, []);
 
   const SidebarContent = () => (
     <>
@@ -29,11 +26,7 @@ export function DashboardSidebar({ items, activeItem, onItemClick, schoolName = 
       <div className="p-5 border-b border-[#334155]/50 bg-gradient-to-b from-[#1E293B] to-[#1E293B]/95">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-white to-gray-100 flex items-center justify-center flex-shrink-0 shadow-xl p-2 ring-4 ring-[#3B82F6]/30 hover:ring-[#3B82F6]/50 transition-all">
-            <img 
-              src={schoolLogo} 
-              alt="Graceland Royal Academy Logo" 
-              className="w-full h-full object-contain rounded-full"
-            />
+            <School className="w-8 h-8 text-blue-600" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-white truncate">

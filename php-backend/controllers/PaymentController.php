@@ -174,7 +174,7 @@ class PaymentController {
             }
 
             $sql = "SELECT p.*, s.full_name as student_name, s.reg_no, 
-                    f.name as fee_type, f.amount as fee_amount, c.name as class_name,
+                    f.fee_type, f.amount as fee_amount, c.name as class_name,
                     u.name as created_by_name
                     FROM payments p
                     LEFT JOIN students s ON p.student_id = s.id
@@ -208,7 +208,7 @@ class PaymentController {
             $this->checkPermission(['admin', 'accountant'], $user);
             
             $sql = "SELECT p.*, s.full_name as student_name, s.reg_no, 
-                    f.name as fee_type, f.amount as fee_amount, c.name as class_name,
+                    f.fee_type, f.amount as fee_amount, c.name as class_name,
                     u.name as created_by_name
                     FROM payments p
                     LEFT JOIN students s ON p.student_id = s.id
@@ -304,7 +304,7 @@ class PaymentController {
                 }
             }
             
-            $sql = "SELECT p.*, f.name as fee_type, f.amount as fee_amount, f.due_date,
+            $sql = "SELECT p.*, f.fee_type, f.amount as fee_amount, f.due_date,
                     CASE WHEN p.status = 'verified' THEN 'Paid' 
                          WHEN p.status = 'pending' THEN 'Pending Verification'
                          ELSE 'Rejected' END as status_text

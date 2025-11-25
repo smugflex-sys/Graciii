@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { User, Lock } from "lucide-react";
+import { User, Lock, School } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useNavigate } from "react-router-dom";
-import schoolLogo from "../assets/0f38946e273b623e7cb0b865c2f2fe194a9e92ea.png";
 import { useAuth } from "../contexts/AuthContext";
 
 export function LoginPage() {
@@ -44,13 +43,9 @@ export function LoginPage() {
         <div className="text-center mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
           <div 
             onClick={() => navigate("/")}
-            className="w-24 h-24 rounded-full bg-white flex items-center justify-center mx-auto mb-4 cursor-pointer hover:shadow-2xl transition-all hover:scale-110 shadow-xl p-2.5 ring-4 ring-[#FFD700]/30"
+            className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center mx-auto mb-4 cursor-pointer hover:shadow-2xl transition-all hover:scale-110 shadow-xl p-2.5 ring-4 ring-[#FFD700]/30"
           >
-            <img 
-              src={schoolLogo} 
-              alt="Graceland Royal Academy Logo" 
-              className="w-full h-full object-contain rounded-full"
-            />
+            <School className="w-12 h-12 text-white" />
           </div>
           <h1 className="text-3xl text-white mb-2">Graceland Royal Academy</h1>
           <p className="text-[#FFD700] italic">Wisdom & Illumination</p>

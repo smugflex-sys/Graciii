@@ -5,7 +5,7 @@ import { SchoolProvider } from './contexts/SchoolContext';
 import { AuthProvider, useAuth, RolePermissions } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
-import '@/index.css';
+import './index.css';
 
 // Lazy loaded components
 const LandingPage = lazy(() => import('./components/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -16,7 +16,7 @@ const AccountantDashboard = lazy(() => import('./components/AccountantDashboard'
 const ParentDashboard = lazy(() => import('./components/ParentDashboard').then(m => ({ default: m.ParentDashboard })));
 const ResultReportCard = lazy(() => import('./components/ResultReportCard').then(m => ({ default: m.ResultReportCard })));
 const UnauthorizedPage = lazy(() => import('./components/UnauthorizedPage').then(m => ({ default: m.UnauthorizedPage })));
-const HealthPage = lazy(() => import('@/components/admin/HealthPage').then(m => ({ default: m.HealthPage })));
+const HealthPage = lazy(() => import('./components/admin/HealthPage').then(m => ({ default: m.HealthPage })));
 
 // Role-based route wrapper with permission checking
 const RoleBasedRoute = ({ role, requiredPermissions, children }: { 

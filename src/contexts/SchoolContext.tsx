@@ -19,7 +19,7 @@ export interface Session {
   name: string;
   is_active: boolean;
   prefix?: string;
-  status: 'Active' | 'Inactive';
+  status: 'active' | 'inactive';
   start_date: string;
   end_date: string;
   created_at: string;
@@ -98,7 +98,7 @@ export interface Class {
   level: string;
   classTeacherId: number | null;
   capacity: number;
-  status: 'Active' | 'Inactive';
+  status: 'active' | 'inactive';
   // Optional frontend-only fields
   section?: string;
   currentStudents?: number;
@@ -116,7 +116,7 @@ export interface Subject {
   creditUnits: number;
   description?: string;
   isCore: boolean;
-  status: 'Active' | 'Inactive';
+  status: 'active' | 'inactive';
 }
 
 export interface ClassSubjectRegistration {
@@ -163,7 +163,7 @@ export interface Score {
   subjectTeacher: string;
   enteredBy: number;
   enteredDate: string;
-  status: 'Draft' | 'Submitted' | 'Approved' | 'Rejected';
+  status: 'Draft' | 'Submitted';
   academicYear: string;
   term: string;
 }
@@ -283,9 +283,7 @@ export interface Payment {
   paymentMethod: string;
   reference: string;
   recordedBy: number;
-  recordedDate: string;
-  receiptNumber: string;
-  status: 'Verified' | 'Pending' | 'Rejected';
+  status?: string;
 }
 
 // Authenticated user in SchoolContext, derived from AuthContext.AuthUser
@@ -379,20 +377,14 @@ interface SchoolContextType {
   activityLogs: ActivityLog[];
 
   // Settings
-  currentTerm: string;
-  currentAcademicYear: string;
+  currentTerm: string | null;
+  currentAcademicYear: string | null;
   currentTermId: number | null;
   currentSessionId: number | null;
   loadingSessionTerm: boolean;
   sessionTermError: string | null;
   schoolSettings: SchoolSettings;
   bankAccountSettings: BankAccountSettings | null;
-
-  // Session Methods
-  fetchSessions: () => Promise<void>;
-  fetchTerms: () => Promise<void>;
-  getCurrentSession: () => Promise<Session | null>;
-  getCurrentTerm: () => Promise<Term | null>;
 
   // Student Methods
   addStudent: (student: Omit<Student, 'id'>) => Promise<number>;
@@ -471,7 +463,7 @@ interface SchoolContextType {
   addFeeStructure: (structure: Omit<FeeStructure, 'id'>) => void;
   updateFeeStructure: (id: number, structure: Partial<FeeStructure>) => void;
   getFeeStructureByClass: (classId: number, term: string, academicYear: string) => FeeStructure | undefined;
-  updateStudentFeeBalance: (id: number) => void;
+  updateStudentFeeBalance: (id: number, balance: Partial<StudentFeeBalance>) => void;
   getStudentFeeBalance: (studentId: number, term: string, academicYear: string) => StudentFeeBalance | undefined;
 
   // Payment Methods
@@ -540,18 +532,14 @@ export function useSchool() {
 
 export function SchoolProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [currentTerm, setCurrentTerm] = useState<string>('');
-  const [currentAcademicYear, setCurrentAcademicYear] = useState<string>('');
+  const [currentTerm, setCurrentTerm] = useState<string | null>(null);
+  const [currentAcademicYear, setCurrentAcademicYear] = useState<string | null>(null);
   // currentUser is now derived from AuthContext.user (AuthUser) and kept in sync
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentTermId, setCurrentTermId] = useState<number | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
   const [loadingSessionTerm, setLoadingSessionTerm] = useState(true);
   const [sessionTermError, setSessionTermError] = useState<string | null>(null);
-  
-  // Sessions and Terms state
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [terms, setTerms] = useState<Term[]>([]);
   
   const [schoolSettings, setSchoolSettings] = useState<SchoolSettings>({
     schoolName: 'Graceland Royal Academy',
@@ -676,57 +664,14 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       fetchSessionAndTerm();
     } else {
       // Reset state when user logs out
-      setCurrentTerm('');
-      setCurrentAcademicYear('');
+      setCurrentTerm(null);
+      setCurrentAcademicYear(null);
       setCurrentTermId(null);
       setCurrentSessionId(null);
       setSessionTermError(null);
       setLoadingSessionTerm(false);
     }
   }, [user]);
-
-  // Session and Term fetching methods
-  const fetchSessions = async () => {
-    try {
-      const response = await sessionsAPI.getAll();
-      setSessions(response as Session[]);
-    } catch (error) {
-      console.error('Failed to fetch sessions:', error);
-      throw error;
-    }
-  };
-
-  const fetchTerms = async () => {
-    try {
-      const response = await termsAPI.getAll();
-      setTerms(response as Term[]);
-    } catch (error) {
-      console.error('Failed to fetch terms:', error);
-      throw error;
-    }
-  };
-
-  const getCurrentSession = async (): Promise<Session | null> => {
-    try {
-      const response = await sessionsAPI.getActive();
-      const session = (response as any)?.data || response || null;
-      return session;
-    } catch (error) {
-      console.error('Failed to get current session:', error);
-      return null;
-    }
-  };
-
-  const getCurrentTerm = async (): Promise<Term | null> => {
-    try {
-      const response = await termsAPI.getCurrent();
-      const term = (response as any)?.data || response || null;
-      return term;
-    } catch (error) {
-      console.error('Failed to get current term:', error);
-      return null;
-    }
-  };
 
   // Helper function to calculate grade (70-based A–F scale)
   const calculateGrade = (total: number): string => {
@@ -753,12 +698,10 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
 
   // ==================== IMPLEMENTATION ====================
 
-  // Fetch Students from API with role-based optimization
+  // Fetch Students from API (backend -> frontend Student mapping)
   const fetchStudents = async () => {
     try {
-      // Get role-based parameters for optimized data loading
-      const params = getRoleBasedStudentParams();
-      const response = await studentsAPI.getAll(params);
+      const response = await studentsAPI.getAll();
       const rawList = Array.isArray(response)
         ? response
         : ((response as any)?.data && Array.isArray((response as any).data)
@@ -808,40 +751,6 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching students:', error);
       setStudents([]);
-    }
-  };
-
-  // Get role-based parameters for student API calls
-  const getRoleBasedStudentParams = () => {
-    if (!currentUser) {
-      return {};
-    }
-
-    switch (currentUser.role) {
-      case 'parent':
-        // Parents get only their children
-        return { parentId: currentUser.id };
-      
-      case 'teacher':
-        // Teachers get students from their assigned classes
-        const assignments = getTeacherAssignments(currentUser.linkedId || 0);
-        const assignedClassIds = assignments
-          .map(a => a.classId)
-          .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
-        
-        if (assignedClassIds.length > 0) {
-          return { classIds: assignedClassIds }; // Support multiple class IDs
-        }
-        return { classId: 0 }; // Will return empty if no assignments
-      
-      case 'accountant':
-        // Accountants get recent active students for payment processing
-        return { limit: 100, status: 'Active' };
-      
-      case 'admin':
-      default:
-        // Admins get all students (no filtering)
-        return {};
     }
   };
 
@@ -1085,9 +994,9 @@ const generateAdmissionNumber = () => {
             : []);
 
       const mapped: Class[] = rawList.map((c: any) => {
-        const statusRaw = (c.status || '').toString();
-        const status: 'Active' | 'Inactive' =
-          statusRaw.toLowerCase() === 'inactive' ? 'Inactive' : 'Active';
+        const statusRaw = (c.status || '').toString().toLowerCase();
+        const status: 'active' | 'inactive' =
+          statusRaw === 'inactive' ? 'inactive' : 'active';
 
         return {
           id: Number(c.id),
@@ -1179,9 +1088,9 @@ const generateAdmissionNumber = () => {
             : []);
 
       const mapped: Class[] = rawList.map((c: any) => {
-        const statusRaw = (c.status || '').toString();
-        const status: 'Active' | 'Inactive' =
-          statusRaw.toLowerCase() === 'inactive' ? 'Inactive' : 'Active';
+        const statusRaw = (c.status || '').toString().toLowerCase();
+        const status: 'active' | 'inactive' =
+          statusRaw === 'inactive' ? 'inactive' : 'active';
 
         return {
           id: Number(c.id),
@@ -1237,8 +1146,8 @@ const generateAdmissionNumber = () => {
             : []);
 
       const mapped: Subject[] = rawList.map((s: any) => {
-        const statusRaw = (s.status || '').toString();
-        const status: 'Active' | 'Inactive' = statusRaw === 'Active' ? 'Active' : 'Inactive';
+        const statusRaw = (s.status || '').toString().toLowerCase();
+        const status: 'Active' | 'Inactive' = statusRaw === 'active' ? 'Active' : 'Inactive';
 
         return {
           id: Number(s.id),
@@ -1938,8 +1847,8 @@ const generateAdmissionNumber = () => {
         studentName: p.student_name || studentName,
         amount: Number(p.amount_paid),
         paymentType: p.fee_type || 'Payment',
-        term: currentTerm || '',
-        academicYear: currentAcademicYear || '',
+        term: currentTerm,
+        academicYear: currentAcademicYear,
         paymentMethod: p.payment_method || '',
         reference: p.transaction_id || '',
         recordedBy: Number(p.created_by) || 0,
@@ -1988,8 +1897,8 @@ const generateAdmissionNumber = () => {
           studentName,
           amount: Number(p.amount_paid),
           paymentType: p.fee_type || 'Payment',
-          term: currentTerm || '',
-          academicYear: currentAcademicYear || '',
+          term: currentTerm,
+          academicYear: currentAcademicYear,
           paymentMethod: p.payment_method || '',
           reference: p.transaction_id || '',
           recordedBy: Number(p.created_by) || 0,
@@ -2060,7 +1969,7 @@ const generateAdmissionNumber = () => {
 
     const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
 
-    const feeStructure = getFeeStructureByClass(student.classId, currentTerm || '', currentAcademicYear || '');
+    const feeStructure = getFeeStructureByClass(student.classId, currentTerm, currentAcademicYear);
     const totalFeeRequired = feeStructure?.totalFee || 0;
     const balance = totalFeeRequired - totalPaid;
 
@@ -2082,8 +1991,8 @@ const generateAdmissionNumber = () => {
         id: studentFeeBalances.length + 1,
         studentId,
         classId: student.classId,
-        term: currentTerm || '',
-        academicYear: currentAcademicYear || '',
+        term: currentTerm,
+        academicYear: currentAcademicYear,
         totalFeeRequired,
         totalPaid,
         balance,
@@ -2502,15 +2411,16 @@ const generateAdmissionNumber = () => {
   const promoteStudent = async (studentId: number, newClassId: number, newAcademicYear: string) => {
     const student = students.find(s => s.id === studentId);
     const newClass = classes.find(c => c.id === newClassId);
-    const sessionId = currentSessionId;
+    const currentSession = sessions.find(s => s.is_active);
     
-    if (!student || !newClass || !sessionId) return;
+    if (!student || !newClass || !currentSession) return;
     
     try {
+      // Create promotion record in backend
       const promotionResponse = await promotionsAPI.create({
         student_id: studentId,
         to_class_id: newClassId,
-        to_session_id: sessionId,
+        to_session_id: currentSession.id,
         promotion_type: 'regular',
         academic_performance: 'Good',
         conduct: 'Good',
@@ -2518,11 +2428,12 @@ const generateAdmissionNumber = () => {
         promotion_date: new Date().toISOString().split('T')[0]
       });
       
-      const envelope = promotionResponse as any;
-      if (envelope?.data?.id) {
-        await promotionsAPI.approve(envelope.data.id);
+      // Auto-approve the promotion
+      if (promotionResponse?.data?.id) {
+        await promotionsAPI.approve(promotionResponse.data.id);
       }
       
+      // Update local state after successful backend creation and approval
       setStudents(students.map(s => {
         if (s.id === studentId) {
           return {
@@ -2536,9 +2447,11 @@ const generateAdmissionNumber = () => {
         return s;
       }));
       
+      // Update class student counts
       updateClassStudentCount(student.classId);
       updateClassStudentCount(newClassId);
       
+      // Log the promotion activity
       if (currentUser) {
         addActivityLog({
           actor: currentUser.username || currentUser.name || 'Unknown',
@@ -2557,37 +2470,40 @@ const generateAdmissionNumber = () => {
   };
 
   const promoteMultipleStudents = async (studentIds: number[], classMapping: { [studentId: number]: number }, newAcademicYear: string) => {
-    const sessionId = currentSessionId;
-    if (!sessionId) throw new Error('No active session found');
+    const currentSession = sessions.find(s => s.is_active);
+    if (!currentSession) throw new Error('No active session found');
     
     try {
-      const promotions = studentIds
-        .map(studentId => {
-          const student = students.find(s => s.id === studentId);
-          const newClassId = classMapping[studentId];
-          
-          if (!student || !newClassId) return null;
-          
-          return {
-            student_id: studentId,
-            to_class_id: newClassId,
-            to_session_id: sessionId,
-            promotion_type: 'regular',
-            academic_performance: 'Good',
-            conduct: 'Good',
-            attendance_rate: 75,
-            promotion_date: new Date().toISOString().split('T')[0]
-          };
-        })
-        .filter((p): p is { student_id: number; to_class_id: number; to_session_id: number; promotion_type: string; academic_performance: string; conduct: string; attendance_rate: number; promotion_date: string } => !!p);
+      // Prepare bulk promotion data
+      const promotions = studentIds.map(studentId => {
+        const student = students.find(s => s.id === studentId);
+        const newClassId = classMapping[studentId];
+        
+        if (!student || !newClassId) return null;
+        
+        return {
+          student_id: studentId,
+          to_class_id: newClassId,
+          to_session_id: currentSession.id,
+          promotion_type: 'regular',
+          academic_performance: 'Good',
+          conduct: 'Good',
+          attendance_rate: 75,
+          promotion_date: new Date().toISOString().split('T')[0]
+        };
+      }).filter(Boolean);
       
+      // Create bulk promotion records in backend
       const bulkResponse = await promotionsAPI.createBulk(promotions);
       
-      const bulkEnvelope = bulkResponse as any;
-      if (bulkEnvelope?.data?.success_count > 0) {
-        console.log(`Successfully created ${bulkEnvelope.data.success_count} promotions`);
+      // Auto-approve all successful promotions
+      if (bulkResponse?.data?.success_count > 0) {
+        // Note: In a real implementation, you'd need to get the promotion IDs and approve them
+        // For now, we'll assume the backend handles auto-approval or we'd need to modify the flow
+        console.log(`Successfully created ${bulkResponse.data.success_count} promotions`);
       }
       
+      // Update local state after successful backend creation
       studentIds.forEach(studentId => {
         const newClassId = classMapping[studentId];
         const student = students.find(s => s.id === studentId);
@@ -2607,11 +2523,13 @@ const generateAdmissionNumber = () => {
             return s;
           }));
           
+          // Update class student counts
           updateClassStudentCount(student.classId);
           updateClassStudentCount(newClassId);
         }
       });
       
+      // Log the bulk promotion activity
       if (currentUser) {
         addActivityLog({
           actor: currentUser.username || currentUser.name || 'Unknown',
@@ -2752,14 +2670,6 @@ const generateAdmissionNumber = () => {
     getActivityLogs,
     promoteStudent,
     promoteMultipleStudents,
-    
-    // Session and Term data
-    sessions,
-    terms,
-    fetchSessions,
-    fetchTerms,
-    getCurrentSession,
-    getCurrentTerm,
   };
 
   return <SchoolContext.Provider value={value}>{children}</SchoolContext.Provider>;

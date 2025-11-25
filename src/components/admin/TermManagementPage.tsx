@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
+import { Button } from '../../ui/button';
+import { Input } from '../../ui/input';
+import { Label } from '../../ui/label';
+import { Badge } from '../../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { 
   Calendar, 
   Plus, 
@@ -18,7 +18,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { termsAPI, sessionsAPI, Term, Session } from '@/services/apiService';
+import { termsAPI, sessionsAPI, Term, Session } from '../../services/apiService';
 
 interface TermFormData {
   name: string;

@@ -29,15 +29,8 @@ class FeeController {
                 return;
             }
             
-            // Map incoming name/fee_type to DB column `name`
-            $feeName = $input['name'] ?? ($input['fee_type'] ?? null);
-            if (!$feeName) {
-                Response::validation(['name' => 'Fee name is required']);
-                return;
-            }
-
             // Insert fee
-            $sql = "INSERT INTO fees (class_id, term_id, session_id, name, amount, description, due_date, status, created_by) 
+            $sql = "INSERT INTO fees (class_id, term_id, session_id, fee_type, amount, description, due_date, status, created_by) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?)";
             
             $stmt = $this->db->prepare($sql);
@@ -45,7 +38,7 @@ class FeeController {
                 $input['class_id'],
                 $input['term_id'],
                 $input['session_id'],
-                $feeName,
+                $input['fee_type'],
                 $input['amount'],
                 $input['description'] ?? null,
                 $input['due_date'] ?? null,
@@ -130,11 +123,8 @@ class FeeController {
                 return;
             }
             
-            // Map incoming name/fee_type to DB column `name`
-            $feeName = $input['name'] ?? ($input['fee_type'] ?? null);
-
             // Update fee
-            $sql = "UPDATE fees SET class_id = ?, term_id = ?, session_id = ?, name = ?, 
+            $sql = "UPDATE fees SET class_id = ?, term_id = ?, session_id = ?, fee_type = ?, 
                     amount = ?, description = ?, due_date = ?, updated_at = NOW()
                     WHERE id = ?";
             
@@ -143,7 +133,7 @@ class FeeController {
                 $input['class_id'],
                 $input['term_id'],
                 $input['session_id'],
-                $feeName,
+                $input['fee_type'],
                 $input['amount'],
                 $input['description'] ?? null,
                 $input['due_date'] ?? null,
@@ -213,8 +203,8 @@ class FeeController {
             $errors['session_id'] = 'Session is required';
         }
         
-        if (!isset($input['name']) && !isset($input['fee_type'])) {
-            $errors['name'] = 'Fee name is required';
+        if (!isset($input['fee_type'])) {
+            $errors['fee_type'] = 'Fee type is required';
         }
         
         if (!isset($input['amount']) || !is_numeric($input['amount']) || $input['amount'] <= 0) {

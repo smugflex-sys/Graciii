@@ -6,16 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --outDir=public_html --base=/",
-    "build:analyze": "vite build --outDir=public_html --base=/ && open public_html/bundle-analyzer-report.html",
     "preview": "vite preview --outDir=public_html",
     "type-check": "tsc --noEmit",
     "lint": "tsc --noEmit && echo 'TypeScript check passed'",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
     "deploy": "npm run build && echo 'Build complete. Ready for deployment.'"
   },
   "dependencies": {
@@ -75,21 +68,14 @@
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
-    "@vitejs/plugin-react-swc": "^3.5.0",
+    "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^1.0.0",
     "@vitest/ui": "^1.0.0",
     "autoprefixer": "^10.4.16",
-    "bcrypt": "^6.0.0",
-    "jsdom": "^23.0.1",
-    "msw": "^2.0.0",
     "postcss": "^8.4.31",
-    "rollup-plugin-visualizer": "^6.0.5",
-    "sharp": "^0.34.5",
     "tailwindcss": "^3.3.5",
     "typescript": "^5.9.3",
     "vite": "^5.0.0",
-    "vite-plugin-compression2": "^2.3.1",
-    "vite-plugin-image-optimizer": "^2.0.3",
     "vitest": "^1.0.0"
   }
 }

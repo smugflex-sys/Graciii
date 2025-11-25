@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 type ComponentModule = {
   default: React.ComponentType<any>;

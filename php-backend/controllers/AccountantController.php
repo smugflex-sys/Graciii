@@ -266,7 +266,7 @@ class AccountantController {
             
             // Recent payments
             $recentSql = "SELECT p.*, s.full_name as student_name, s.reg_no,
-                         f.name AS fee_type, c.name as class_name
+                         f.fee_type, c.name as class_name
                          FROM payments p
                          LEFT JOIN students s ON p.student_id = s.id
                          LEFT JOIN fees f ON p.fee_id = f.id

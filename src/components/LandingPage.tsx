@@ -3,13 +3,11 @@ import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import schoolLogo from "../assets/0f38946e273b623e7cb0b865c2f2fe194a9e92ea.png";
 import { preloadImage } from "../utils/imageOptimizer";
 
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  useEffect(() => { preloadImage(schoolLogo); }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -18,12 +16,8 @@ export function LandingPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg ring-2 ring-[#FFD700]/30 p-1">
-                <img 
-                  src={schoolLogo} 
-                  alt="Graceland Royal Academy Logo" 
-                  className="w-full h-full object-contain rounded-full"
-                />
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg ring-2 ring-[#FFD700]/30 p-1">
+                <School className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h3 className="text-[#0A2540]">Graceland Royal Academy</h3>

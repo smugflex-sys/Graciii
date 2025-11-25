@@ -10,15 +10,15 @@ class Fees {
 
     public function create($data) {
         $sql = "INSERT INTO {$this->table} 
-                (class_id, term_id, session_id, name, amount, description, due_date, status, created_by) 
-                VALUES (:class_id, :term_id, :session_id, :name, :amount, :description, :due_date, :status, :created_by)";
+                (class_id, term_id, session_id, fee_type, amount, description, due_date, status, created_by) 
+                VALUES (:class_id, :term_id, :session_id, :fee_type, :amount, :description, :due_date, :status, :created_by)";
         
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             'class_id' => $data['class_id'],
             'term_id' => $data['term_id'],
             'session_id' => $data['session_id'],
-            'name' => $data['name'] ?? ($data['fee_type'] ?? null),
+            'fee_type' => $data['fee_type'],
             'amount' => $data['amount'],
             'description' => $data['description'] ?? null,
             'due_date' => $data['due_date'] ?? null,
@@ -70,7 +70,7 @@ class Fees {
         }
         
         if (isset($options['fee_type'])) {
-            $whereClauses[] = "f.name = :fee_type";
+            $whereClauses[] = "f.fee_type = :fee_type";
             $params['fee_type'] = $options['fee_type'];
         }
         
@@ -88,7 +88,7 @@ class Fees {
             $sql .= " WHERE " . implode(' AND ', $whereClauses);
         }
         
-        $sql .= " ORDER BY s.name DESC, t.name ASC, c.level ASC, c.name ASC, f.name ASC";
+        $sql .= " ORDER BY s.name DESC, t.name ASC, c.level ASC, c.name ASC, f.fee_type ASC";
         
         if (isset($options['limit'])) {
             $sql .= " LIMIT :limit";
@@ -129,7 +129,7 @@ class Fees {
         $fields = [];
         $params = ['id' => $id];
 
-        $allowedFields = ['class_id', 'term_id', 'session_id', 'name', 'amount', 'description', 'due_date', 'status'];
+        $allowedFields = ['class_id', 'term_id', 'session_id', 'fee_type', 'amount', 'description', 'due_date', 'status'];
         
         foreach ($allowedFields as $field) {
             if (isset($data[$field])) {
@@ -159,7 +159,7 @@ class Fees {
                 LEFT JOIN classes c ON f.class_id = c.id
                 LEFT JOIN terms t ON f.term_id = t.id
                 LEFT JOIN sessions s ON f.session_id = s.id
-                WHERE (f.name LIKE :query OR f.description LIKE :query OR 
+                WHERE (f.fee_type LIKE :query OR f.description LIKE :query OR 
                        c.name LIKE :query OR t.name LIKE :query OR s.name LIKE :query)
                 AND f.status = 'active'
                 LIMIT :limit";
@@ -193,7 +193,7 @@ class Fees {
         }
         
         if (isset($filters['fee_type'])) {
-            $sql .= " AND name = :fee_type";
+            $sql .= " AND fee_type = :fee_type";
             $params['fee_type'] = $filters['fee_type'];
         }
         
@@ -204,7 +204,7 @@ class Fees {
     }
 
     public function getFeeTypes($options = []) {
-        $sql = "SELECT DISTINCT name AS fee_type FROM {$this->table} WHERE status = 'active'";
+        $sql = "SELECT DISTINCT fee_type FROM {$this->table} WHERE status = 'active'";
         $params = [];
         
         if (isset($options['class_id'])) {

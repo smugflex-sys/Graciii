@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
@@ -7,10 +7,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
-      react({
-        // Use minimal SWC configuration
-        jsxImportSource: undefined,
-      }),
+      react(),
       // Remove all plugins that could trigger virus scanners
       // No compression, no bundle analyzer, no image optimizer
     ].filter(Boolean),
