@@ -1,0 +1,454 @@
+import { useState } from "react";
+import { FileText, Download, Filter, TrendingUp, DollarSign, Users, AlertCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Label } from "../ui/label";
+import { Badge } from "../ui/badge";
+import { useSchool } from "../../contexts/SchoolContext";
+import { toast } from "sonner";
+// import jsPDF from "jspdf";
+// import autoTable from "jspdf-autotable";
+
+export function PaymentReportsPage() {
+  const {
+    payments,
+    students,
+    classes,
+    feeStructures,
+    studentFeeBalances,
+    currentTerm,
+    currentAcademicYear,
+    schoolSettings,
+  } = useSchool();
+
+  const [filterClass, setFilterClass] = useState<string>("all");
+  const [filterTerm, setFilterTerm] = useState(currentTerm);
+  const [filterYear, setFilterYear] = useState(currentAcademicYear);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  const getFilteredData = () => {
+    let filteredBalances = studentFeeBalances.filter(
+      (balance) => balance.term === filterTerm && balance.academicYear === filterYear
+    );
+
+    if (filterClass !== "all") {
+      filteredBalances = filteredBalances.filter((b) => b.classId === Number(filterClass));
+    }
+
+    if (filterStatus !== "all") {
+      filteredBalances = filteredBalances.filter((b) => b.status === filterStatus);
+    }
+
+    return filteredBalances;
+  };
+
+  const calculateStats = () => {
+    const filteredBalances = getFilteredData();
+    
+    const totalExpected = filteredBalances.reduce((sum, b) => sum + b.totalFeeRequired, 0);
+    const totalCollected = filteredBalances.reduce((sum, b) => sum + b.totalPaid, 0);
+    const totalOutstanding = filteredBalances.reduce((sum, b) => sum + b.balance, 0);
+    
+    const fullyPaid = filteredBalances.filter((b) => b.status === "Paid").length;
+    const partiallyPaid = filteredBalances.filter((b) => b.status === "Partial").length;
+    const unpaid = filteredBalances.filter((b) => b.status === "Unpaid").length;
+    
+    const collectionRate = totalExpected > 0 ? ((totalCollected / totalExpected) * 100).toFixed(1) : "0";
+
+    return {
+      totalExpected,
+      totalCollected,
+      totalOutstanding,
+      fullyPaid,
+      partiallyPaid,
+      unpaid,
+      collectionRate,
+      totalStudents: filteredBalances.length,
+    };
+  };
+
+  const exportToPDF = () => {
+    toast.info("PDF export temporarily disabled for security review. Use Print instead.");
+    return;
+    
+    /* Original PDF export code - temporarily commented out
+    const doc = new jsPDF();
+    const stats = calculateStats();
+    const filteredBalances = getFilteredData();
+
+    // Header
+    doc.setFontSize(18);
+    doc.text(schoolSettings.schoolName, 105, 15, { align: "center" });
+    doc.setFontSize(12);
+    doc.text(schoolSettings.schoolMotto, 105, 22, { align: "center" });
+    
+    // Report Title
+    doc.setFontSize(14);
+    doc.text("Payment Report", 105, 32, { align: "center" });
+    
+    // Report Details
+    doc.setFontSize(10);
+    doc.text(`Term: ${filterTerm}`, 14, 42);
+    doc.text(`Academic Year: ${filterYear}`, 14, 48);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 54);
+    
+    // Summary Stats
+    doc.setFontSize(12);
+    doc.text("Summary Statistics", 14, 65);
+    doc.setFontSize(10);
+    doc.text(`Total Expected: ₦${stats.totalExpected.toLocaleString()}`, 14, 72);
+    doc.text(`Total Collected: ₦${stats.totalCollected.toLocaleString()}`, 14, 78);
+    doc.text(`Outstanding: ₦${stats.totalOutstanding.toLocaleString()}`, 14, 84);
+    doc.text(`Collection Rate: ${stats.collectionRate}%`, 14, 90);
+    doc.text(`Total Students: ${stats.totalStudents}`, 110, 72);
+    doc.text(`Fully Paid: ${stats.fullyPaid}`, 110, 78);
+    doc.text(`Partially Paid: ${stats.partiallyPaid}`, 110, 84);
+    doc.text(`Unpaid: ${stats.unpaid}`, 110, 90);
+
+    // Table Data
+    const tableData = filteredBalances.map((balance) => {
+      const student = students.find((s) => s.id === balance.studentId);
+      const classInfo = classes.find((c) => c.id === balance.classId);
+      
+      return [
+        student ? `${student.firstName} ${student.lastName}` : "N/A",
+        classInfo?.name || "N/A",
+        `₦${balance.totalFeeRequired.toLocaleString()}`,
+        `₦${balance.totalPaid.toLocaleString()}`,
+        `₦${balance.balance.toLocaleString()}`,
+        balance.status,
+      ];
+    });
+
+    autoTable(doc, {
+      head: [["Student Name", "Class", "Required", "Paid", "Balance", "Status"]],
+      body: tableData,
+      startY: 100,
+      theme: "grid",
+      headStyles: { fillColor: [0, 124, 145] },
+      styles: { fontSize: 8 },
+    });
+
+    doc.save(`Payment_Report_${filterTerm}_${filterYear}.pdf`);
+    toast.success("Report exported successfully!");
+    */ // End of commented PDF code
+  };
+
+  const exportToCSV = () => {
+    const filteredBalances = getFilteredData();
+    const stats = calculateStats();
+
+    let csv = "Payment Report\n";
+    csv += `${schoolSettings.schoolName}\n`;
+    csv += `Term: ${filterTerm}, Academic Year: ${filterYear}\n`;
+    csv += `Generated: ${new Date().toLocaleDateString()}\n\n`;
+    
+    csv += "Summary Statistics\n";
+    csv += `Total Expected,${stats.totalExpected}\n`;
+    csv += `Total Collected,${stats.totalCollected}\n`;
+    csv += `Outstanding,${stats.totalOutstanding}\n`;
+    csv += `Collection Rate,${stats.collectionRate}%\n`;
+    csv += `Total Students,${stats.totalStudents}\n`;
+    csv += `Fully Paid,${stats.fullyPaid}\n`;
+    csv += `Partially Paid,${stats.partiallyPaid}\n`;
+    csv += `Unpaid,${stats.unpaid}\n\n`;
+
+    csv += "Student Name,Admission Number,Class,Required,Paid,Balance,Status\n";
+    
+    filteredBalances.forEach((balance) => {
+      const student = students.find((s) => s.id === balance.studentId);
+      const classInfo = classes.find((c) => c.id === balance.classId);
+      
+      csv += `${student ? `${student.firstName} ${student.lastName}` : "N/A"},`;
+      csv += `${student?.admissionNumber || "N/A"},`;
+      csv += `${classInfo?.name || "N/A"},`;
+      csv += `${balance.totalFeeRequired},`;
+      csv += `${balance.totalPaid},`;
+      csv += `${balance.balance},`;
+      csv += `${balance.status}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Payment_Report_${filterTerm}_${filterYear}.csv`;
+    a.click();
+    
+    toast.success("CSV exported successfully!");
+  };
+
+  const stats = calculateStats();
+  const filteredBalances = getFilteredData();
+  const activeClasses = classes.filter((c) => c.status === "active");
+
+  return (
+    <div className="space-y-6">
+      <div className="mb-6">
+        <h1 className="text-[#1F2937] mb-2">Payment Reports</h1>
+        <p className="text-[#6B7280]">Generate and export comprehensive payment reports</p>
+      </div>
+
+      {/* Filters */}
+      <Card className="rounded-xl bg-white border border-[#E5E7EB] shadow-clinical">
+        <CardHeader className="p-6 border-b border-[#E5E7EB]">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-[#007C91]" />
+            <CardTitle className="text-[#1F2937]">Report Filters</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid md:grid-cols-4 gap-4">
+            <div>
+              <Label className="text-[#1F2937] mb-2 block">Class</Label>
+              <Select value={filterClass} onValueChange={setFilterClass}>
+                <SelectTrigger className="rounded-lg border-[#E5E7EB] focus:border-[#007C91]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Classes</SelectItem>
+                  {activeClasses.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id.toString()}>
+                      {cls.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-[#1F2937] mb-2 block">Term</Label>
+              <Select value={filterTerm} onValueChange={setFilterTerm}>
+                <SelectTrigger className="rounded-lg border-[#E5E7EB] focus:border-[#007C91]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="First Term">First Term</SelectItem>
+                  <SelectItem value="Second Term">Second Term</SelectItem>
+                  <SelectItem value="Third Term">Third Term</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-[#1F2937] mb-2 block">Academic Year</Label>
+              <Select value={filterYear} onValueChange={setFilterYear}>
+                <SelectTrigger className="rounded-lg border-[#E5E7EB] focus:border-[#007C91]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2023/2024">2023/2024</SelectItem>
+                  <SelectItem value="2024/2025">2024/2025</SelectItem>
+                  <SelectItem value="2025/2026">2025/2026</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-[#1F2937] mb-2 block">Payment Status</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="rounded-lg border-[#E5E7EB] focus:border-[#007C91]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Paid">Fully Paid</SelectItem>
+                  <SelectItem value="Partial">Partially Paid</SelectItem>
+                  <SelectItem value="Unpaid">Unpaid</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="mt-4 flex gap-3">
+            <Button
+              onClick={exportToPDF}
+              className="bg-[#007C91] hover:bg-[#006073] text-white rounded-xl shadow-clinical"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export PDF
+            </Button>
+            <Button
+              onClick={exportToCSV}
+              variant="outline"
+              className="border-[#007C91] text-[#007C91] hover:bg-[#007C91]/10 rounded-xl"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Statistics Cards */}
+      <div className="grid md:grid-cols-4 gap-6">
+        <Card className="rounded-xl bg-gradient-to-br from-[#007C91] to-[#006073] text-white shadow-clinical">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <DollarSign className="w-6 h-6" />
+              </div>
+              <TrendingUp className="w-5 h-5 opacity-70" />
+            </div>
+            <p className="text-white/80 text-sm mb-1">Total Expected</p>
+            <h3 className="text-white">₦{stats.totalExpected.toLocaleString()}</h3>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl bg-gradient-to-br from-[#10B981] to-[#059669] text-white shadow-clinical">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <DollarSign className="w-6 h-6" />
+              </div>
+              <span className="text-sm opacity-80">{stats.collectionRate}%</span>
+            </div>
+            <p className="text-white/80 text-sm mb-1">Total Collected</p>
+            <h3 className="text-white">₦{stats.totalCollected.toLocaleString()}</h3>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl bg-gradient-to-br from-[#EF4444] to-[#DC2626] text-white shadow-clinical">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+            </div>
+            <p className="text-white/80 text-sm mb-1">Outstanding</p>
+            <h3 className="text-white">₦{stats.totalOutstanding.toLocaleString()}</h3>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl bg-gradient-to-br from-[#F4B400] to-[#F59E0B] text-white shadow-clinical">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <Users className="w-6 h-6" />
+              </div>
+            </div>
+            <p className="text-white/80 text-sm mb-1">Total Students</p>
+            <h3 className="text-white">{stats.totalStudents}</h3>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Payment Status Breakdown */}
+      <div className="grid md:grid-cols-3 gap-6">
+        <Card className="rounded-xl bg-white border border-[#E5E7EB] shadow-clinical">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[#6B7280] text-sm mb-1">Fully Paid</p>
+                <h3 className="text-[#10B981]">{stats.fullyPaid}</h3>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-[#10B981]/10 flex items-center justify-center">
+                <span className="text-[#10B981]">✓</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl bg-white border border-[#E5E7EB] shadow-clinical">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[#6B7280] text-sm mb-1">Partially Paid</p>
+                <h3 className="text-[#F59E0B]">{stats.partiallyPaid}</h3>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-[#F59E0B]/10 flex items-center justify-center">
+                <span className="text-[#F59E0B]">◐</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl bg-white border border-[#E5E7EB] shadow-clinical">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[#6B7280] text-sm mb-1">Unpaid</p>
+                <h3 className="text-[#EF4444]">{stats.unpaid}</h3>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-[#EF4444]/10 flex items-center justify-center">
+                <span className="text-[#EF4444]">✗</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Detailed Report Table */}
+      <Card className="rounded-xl bg-white border border-[#E5E7EB] shadow-clinical">
+        <CardHeader className="p-6 border-b border-[#E5E7EB]">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-[#007C91]" />
+            <CardTitle className="text-[#1F2937]">Detailed Payment Report</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#007C91] text-white">
+                  <th className="text-left p-4">Student Name</th>
+                  <th className="text-left p-4">Class</th>
+                  <th className="text-right p-4">Required</th>
+                  <th className="text-right p-4">Paid</th>
+                  <th className="text-right p-4">Balance</th>
+                  <th className="text-center p-4">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredBalances.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center p-8 text-[#6B7280]">
+                      No payment records found for the selected filters
+                    </td>
+                  </tr>
+                ) : (
+                  filteredBalances.map((balance) => {
+                    const student = students.find((s) => s.id === balance.studentId);
+                    const classInfo = classes.find((c) => c.id === balance.classId);
+                    
+                    return (
+                      <tr key={balance.id} className="border-b border-[#E5E7EB] hover:bg-[#F9FAFB]">
+                        <td className="p-4 text-[#1F2937]">
+                          {student ? `${student.firstName} ${student.lastName}` : "N/A"}
+                        </td>
+                        <td className="p-4 text-[#6B7280]">{classInfo?.name || "N/A"}</td>
+                        <td className="p-4 text-right text-[#1F2937]">
+                          ₦{balance.totalFeeRequired.toLocaleString()}
+                        </td>
+                        <td className="p-4 text-right text-[#10B981]">
+                          ₦{balance.totalPaid.toLocaleString()}
+                        </td>
+                        <td className="p-4 text-right text-[#EF4444]">
+                          ₦{balance.balance.toLocaleString()}
+                        </td>
+                        <td className="p-4 text-center">
+                          <Badge
+                            className={`rounded-full ${
+                              balance.status === "Paid"
+                                ? "bg-[#10B981] text-white"
+                                : balance.status === "Partial"
+                                ? "bg-[#F59E0B] text-white"
+                                : "bg-[#EF4444] text-white"
+                            }`}
+                          >
+                            {balance.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
